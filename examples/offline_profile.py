@@ -17,7 +17,6 @@ BATCH_SIZE_DEFAULT = 1
 PROMPT_LEN_DEFAULT = 256
 OUTPUT_LEN_DEFAULT = 2
 
-
 @dataclass
 class ProfileContext:
     engine_args: EngineArgs
@@ -92,6 +91,7 @@ def run_profile(context: ProfileContext, csv_output: Optional[str],
                 prompt={'prompt_token_ids': prompt_token_ids},
                 params=sampling_params)
 
+
     def abort_requests():
         for i in range(batch_size):
             llm.llm_engine.abort_request(f"seq{i}")
@@ -117,6 +117,18 @@ def run_profile(context: ProfileContext, csv_output: Optional[str],
 
     decode_results_list = [prof.results for prof in decode_profs]
     prefill_results = prefill_prof.results
+
+    # collect prefill info
+    total_prefill_time = prefill_results._total_cuda_time()
+    # total_prefill_flops = prefill_results._total_flops()
+
+    # Collect decode info
+    decode_times = [prof.results._total_cuda_time() for prof in decode_profs]
+    decode_flops = [prof.results._total_flops() for prof in decode_profs]
+
+    average_decode_time = sum(decode_times) / len(decode_times) if decode_times else 0
+    # average_flops = sum(decode_flops) / len(decode_flops) if decode_flops else 0
+
     has_decode = len(decode_results_list) > 0
 
     LINE_WIDTH = 80
@@ -152,6 +164,20 @@ def run_profile(context: ProfileContext, csv_output: Optional[str],
         print("=" * LINE_WIDTH)
         print()
         decode_results_list[0].print_summary_table()
+
+    print(f"Total Prefill CUDA Time: {total_prefill_time:.4f} µs")
+    # print(f"Total Prefill FLOPS: {total_prefill_flops} FLOPS")
+
+    print("\nDecode Times:")
+    for idx, time in enumerate(decode_times):
+        print(f"  Decode {idx + 1}: {time:.4f} µs")
+    print(f"Average Decode CUDA Time: {average_decode_time:.4f} µs")
+
+    # print("\nDecode Flops:")
+    # for idx, flops in enumerate(decode_flops):
+    #     print(f"  Decode {idx + 1}: {flops} FLOPS")
+    # print(f"Average Decode FLOPS: {average_flops} FLOPS")
+
 
     if csv_output:
         csv_filename_base = csv_output.rstrip(".csv")
@@ -206,6 +232,10 @@ def run_profile(context: ProfileContext, csv_output: Optional[str],
 
 
 if __name__ == "__main__":
+
+    os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+
+
     parser = FlexibleArgumentParser(description="""
 Profile a model
 
@@ -280,3 +310,5 @@ Profile a model
             if k in inspect.signature(ProfileContext).parameters
         })
     run_profile(context, csv_output=args.csv, json_output=args.json)
+
+

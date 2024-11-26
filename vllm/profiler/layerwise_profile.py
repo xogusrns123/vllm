@@ -220,6 +220,26 @@ class LayerwiseProfileResults(profile):
         return sum(
             [self._cumulative_cuda_time(root) for root in self._module_tree])
 
+    def _cumulative_flops(self, node: _ModuleTreeNode):
+        'Return flops'
+
+        def _cumulative_flops_recursive(node: _ModuleTreeNode):
+            if node.is_leaf and (gpu_kineto_event :=
+                                 self._get_kineto_gpu_event(node)):
+                return gpu_kineto_event.flops()
+            else:
+                cumulative_flops = 0
+                for child in node.children:
+                    cumulative_flops += _cumulative_flops_recursive(
+                        child)
+                return cumulative_flops
+
+        return _cumulative_flops_recursive(node)
+    
+    def _total_flops(self):
+        return sum(
+            [self._cumulative_flops(root) for root in self._module_tree])
+
     def _build_stats_trees(self):
         summary_dict: Dict[str, self.StatsTreeNode] = {}
         total_cuda_time = self._total_cuda_time()
