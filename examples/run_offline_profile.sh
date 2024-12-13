@@ -26,7 +26,7 @@ for PROMPT_LEN in "${PROMPT_LENGTHS[@]}"; do
         
         echo "Running inference with batch size ${BATCH_SIZE} and prompt length ${PROMPT_LEN}..."
         
-        python examples/offline_profile.py \
+        python offline_profile.py \
             --model $MODEL \
             --batch-size $BATCH_SIZE \
             --prompt-len $PROMPT_LEN \

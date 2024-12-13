@@ -233,7 +233,7 @@ def run_profile(context: ProfileContext, csv_output: Optional[str],
 
 if __name__ == "__main__":
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 
 
     parser = FlexibleArgumentParser(description="""
